@@ -1,101 +1,111 @@
+"use client";
+
 import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import SearchInput from "@/components/home/searchInput";
+import Navbar from "@/components/home/Navbar";
+import JobList from "@/components/home/JobList";
+import { useEffect } from "react";
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    // <div className="min-h-screen bg-gradient-to-b from-blue-100 to-white">
+    <div className="min-h-screen ">
+      {/* Hero Section */}
+      <div className="relative h-[65vh]  overflow-hidden">
+        {/* <Image
+          src="https://source.unsplash.com/random/1920x1080/?wave"
+          alt="Hero background"
+          layout="fill"
+          objectFit="cover"
+          className="opacity-50"
+        /> */}
+        <div
+          className="relative h-[450px] bg-hero-pattern bg-[51%_38%] bg-no-repeat bg-cover"
+          // style={{
+          //   backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/assets/bgImageLoqQ.jpg')`,
+          //   backgroundSize: "cover",
+          //   backgroundPosition: "51% 38%",
+          // }}
+        >
+          {/* <link rel="preload" href="/assets.bgImage.jpg" as="image" /> */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-50"></div>
+          <Navbar />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          <div className="absolute inset-0 flex flex-col justify-center items-center text-center text-5xl mt-5 user-select-none text-white">
+            <Link href="/" className="cursor-pointer hover:opacity-80">
+              <div className="drop-shadow-2xl">
+                find a{" "}
+                <span className="font-bold">
+                  <span className="hidden sm:contents">remote</span> job
+                </span>
+              </div>
+              <div className="hidden sm:contents drop-shadow-2xl">
+                work from <span className="font-bold">anywhere</span>
+              </div>
+            </Link>
+
+            <SearchInput />
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+
+        <svg
+          className="absolute -bottom-2 w-full"
+          viewBox="0 0 1440 120"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+          <path
+            d="M0 0L60 10C120 20 240 40 360 46.7C480 53 600 47 720 36.7C840 27 960 13 1080 16.3C1200 20 1320 40 1380 50L1440 60V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0V0Z"
+            fill="#fff"
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+        </svg>
+      </div>
+
+      {/* Course Cards */}
+
+      <section className="z-10 max-w-[1100px]   mx-auto sm:rounded-xl py-2 mb-2  bg-teal-300 overflow-hidden">
+        <Link
+          href="https://safetywing.com/nomad-health?referenceID=24730000"
           target="_blank"
-          rel="noopener noreferrer"
+          className="bg-teal-300 h-[88px] mt-1 sm:mx-2 sm:rounded-xl flex items-center cursor-pointer hover:opacity-80 transition-all ease-linear overflow-hidden"
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <div className="p-4 md:pe-2">
+            <Image
+              src="/assets/safetywing.png"
+              alt="safetyLogo"
+              className="w-16 aspect-square object-cover bg-cyan-900 rounded-full"
+              width={60}
+              height={60}
+            />
+          </div>
+          <div className="max-w-sm">
+            <div className="text-[clamp(14px,6vw,17px)] font-extrabold">
+              Nomad Health by SafetyWing
+            </div>
+            <div>Global health coverage for remote workers and nomads</div>
+          </div>
+          <div className="ms-auto p-4 hidden md:block">
+            <button className="bg-white text-black rounded-xl py-3 px-7 font-extrabold">
+              Sign up today
+            </button>
+          </div>
+        </Link>
+      </section>
+      <section className="max-w-[1100px] mx-auto mb-10">
+        <JobList />
+      </section>
     </div>
   );
 }
