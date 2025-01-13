@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Plus, Trash2, Star } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { format } from "date-fns";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -44,11 +46,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { SignInModal } from "./signIn";
+import { useLogin } from "@/lib/loginContext";
 
 const syllabusItemSchema = z.object({
   id: z.number(),
   topic: z.string().min(1, "Topic is required"),
-  date: z.date().nullable(),
+  date: z.string().min(1, "Date cannot be empty"),
   completed: z.boolean(),
 });
 
@@ -70,8 +74,8 @@ const formSchema = z.object({
   description: z
     .string()
     .min(10, "Description must be at least 10 characters."),
-  startDate: z.date().nullable(),
-  endDate: z.date().nullable(),
+  startDate: z.string().min(1, "Date cannot be empty"),
+  endDate: z.string().min(1, "Date cannot be empty"),
   // rating: z.number().min(0).max(5),
   syllabus: z
     .array(syllabusItemSchema)
@@ -102,7 +106,13 @@ const categories = [
 ];
 
 export function PostForm() {
+  const { user, login, logout, isPostsAdded, checkPostAdded } = useLogin(); // Access login and user from context
+
   const [open, setOpen] = useState(false);
+  const [isNotLoggedIn, setIsNotLoggedIn] = useState(false);
+  const [tokenData, setToken] = useState<any>(null);
+  const [ismodalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isPosting, setIsPosting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -116,45 +126,68 @@ export function PostForm() {
       // avatar: "",
       difficulty: "Beginner",
       description: "",
-      startDate: null,
-      endDate: null,
+      startDate: "",
+      endDate: "",
       // rating: 0,
       syllabus: [],
     },
   });
 
+  useEffect(() => {
+    if (Cookies.get("token")) {
+      const tokenFromCookies: any = Cookies.get("token");
+
+      setToken(tokenFromCookies);
+    }
+  }, [Cookies.get("token"), user]);
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("Submit Triggered", values);
+    setIsPosting(true);
     try {
-      console.log("Form Values:", values);
       const token = Cookies.get("token");
-
       console.log("tokentoken", token);
 
-      // setIsLoading(true);
-      const response = await axios.post("/api/users/posts", values, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      console.log("user", user);
 
-      if (response?.data?.status == 200) {
-        console.log("Posted Successfuly", response.data);
-        const success = response?.data?.message;
+      if (token && user?.id) {
+        // setIsLoading(true);
+        console.log("values", values);
+        const response = await axios.post("/api/users/posts", values, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-        // form.reset();
+        if (response?.data?.status == 200) {
+          console.log("Posted Successfuly", response?.data);
+          const success = response?.data?.message;
 
-        // setOpen(false);
-        // setResponseMessage(success);
-        // router.push("/profile");
+          form.reset();
+          setIsNotLoggedIn(false);
+          checkPostAdded(true);
+          setOpen(false);
+          // setResponseMessage(success);
+          // router.push("/profile");
+
+          window.location.reload();
+        } else if (response?.data?.status == 401) {
+          setIsNotLoggedIn(true);
+        } else {
+          const err = response?.data?.error;
+          // setResponseMessage(err ?? "Unable to Login");
+        }
+        setIsPosting(false);
       } else {
-        const err = response?.data?.error;
-        // setResponseMessage(err ?? "Unable to Login");
+        //open login
+
+        setIsNotLoggedIn(true);
       }
     } catch (error) {
       console.error("Error in onSubmit:", error);
+      setIsPosting(false);
     } finally {
-      // setIsLoading(false);
+      setIsPosting(false);
     }
   };
 
@@ -165,7 +198,7 @@ export function PostForm() {
       {
         id: currentSyllabus.length + 1,
         topic: "",
-        date: null,
+        date: "",
         completed: false,
       },
     ]);
@@ -183,9 +216,9 @@ export function PostForm() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="lg:block py-1.5 px-2 font-extrabold rounded-lg text-white z-[1001] hover:border-2 border-2 hover:border-white hover:text-white bg-red-500 hover:bg-transparent  transition-all ease-linear"
+        className="lg:block py-1.5 px-2 font-extrabold rounded-lg text-white z-[1001] hover:border-2 border-2 hover:border-white hover:text-white bg-red-500 hover:bg-red-600  transition-all ease-linear"
       >
-        Start Practice{" "}
+        Do Practice{" "}
       </button>
       <div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -212,11 +245,11 @@ export function PostForm() {
                       name="title"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Title</FormLabel>
+                          <FormLabel>Topic</FormLabel>
                           <FormControl>
                             <Input
                               maxLength={50} // Restrict input length to 100 characters
-                              placeholder="ReactJs/Python/Java/DSA Questions/..."
+                              placeholder="ReactJs"
                               {...field}
                             />
                           </FormControl>
@@ -269,6 +302,7 @@ export function PostForm() {
                           <FormControl>
                             <Input
                               type="number"
+                              min="1"
                               maxLength={30}
                               placeholder="e.g., 1 - 30 "
                               {...field}
@@ -276,6 +310,8 @@ export function PostForm() {
                                 const value = e.target.value;
                                 if (Number(value) > 30) {
                                   field.onChange(30); // Sets value to 30 if it exceeds
+                                } else if (Number(value) < 1) {
+                                  field.onChange(1); // Sets value to 1 if it goes negative
                                 } else {
                                   field.onChange(value);
                                 }
@@ -335,10 +371,11 @@ export function PostForm() {
                       )}
                     />
                     {/* Start Date */}
+
                     <FormField
                       control={form.control}
                       name="startDate"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem className="flex flex-col space-y-2">
                           <FormLabel
                             htmlFor="startDate"
@@ -349,10 +386,17 @@ export function PostForm() {
                           <FormControl>
                             <DatePicker
                               id="startDate"
-                              selected={field.value}
-                              onChange={(date: Date | null) =>
-                                field.onChange(date)
+                              selected={
+                                field?.value ? new Date(field?.value) : null
                               }
+                              onChange={(date: any) => {
+                                // Convert Date to string before passing to the form
+                                const formattedDate = date
+                                  ? format(date, "yyyy-MM-dd")
+                                  : null;
+                                field.onChange(formattedDate);
+                              }}
+                              minDate={new Date()} // Restrict to current date or later
                               placeholderText="Select start date"
                               dateFormat="dd-MM-yyyy"
                               className="w-full border rounded px-2 py-1"
@@ -364,10 +408,11 @@ export function PostForm() {
                     />
 
                     {/* End Date */}
+
                     <FormField
                       control={form.control}
                       name="endDate"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem className="flex flex-col space-y-2">
                           <FormLabel
                             htmlFor="endDate"
@@ -378,10 +423,17 @@ export function PostForm() {
                           <FormControl>
                             <DatePicker
                               id="endDate"
-                              selected={field.value}
-                              onChange={(date: Date | null) =>
-                                field.onChange(date)
+                              selected={
+                                field?.value ? new Date(field?.value) : null
                               }
+                              onChange={(date: any) => {
+                                // Convert Date to string before passing to the form
+                                const formattedDate = date
+                                  ? format(date, "yyyy-MM-dd")
+                                  : null;
+                                field.onChange(formattedDate);
+                              }}
+                              minDate={new Date()} // Restrict to current date or later
                               placeholderText="Select end date"
                               dateFormat="dd-MM-yyyy"
                               className="w-full border rounded px-2 py-1"
@@ -450,14 +502,23 @@ export function PostForm() {
                                   <FormField
                                     control={form.control}
                                     name={`syllabus.${index}.date`}
-                                    render={({ field }) => (
+                                    render={({ field }: any) => (
                                       <FormItem>
                                         <FormControl className="w-full">
                                           <DatePicker
-                                            selected={field.value}
-                                            onChange={(date: Date | null) =>
-                                              field.onChange(date)
+                                            selected={
+                                              field?.value
+                                                ? new Date(field?.value)
+                                                : null
                                             }
+                                            onChange={(date: any) => {
+                                              // Convert Date to string before passing to the form
+                                              const formattedDate = date
+                                                ? format(date, "yyyy-MM-dd")
+                                                : null;
+                                              field.onChange(formattedDate);
+                                            }}
+                                            minDate={new Date()} // Restrict to current date or later
                                             placeholderText="Select date"
                                             dateFormat="dd-MM-yyyy"
                                             className="w-full md:w-auto border rounded px-2 py-1 "
@@ -507,8 +568,12 @@ export function PostForm() {
                     >
                       Cancel
                     </Button>
-                    <Button type="submit" className="w-full md:w-auto">
-                      Create Course
+                    <Button
+                      type="submit"
+                      className="w-full md:w-auto"
+                      disabled={isPosting}
+                    >
+                      {isPosting ? "Posting..." : "Submit"}
                     </Button>
                   </CardFooter>
                 </Card>
@@ -517,6 +582,8 @@ export function PostForm() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <SignInModal open={isNotLoggedIn} setOpen={setIsNotLoggedIn} />
     </>
   );
 }

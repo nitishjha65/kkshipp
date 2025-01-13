@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import CourseDetails from "@/components/course-details";
 import { useRouter } from "next/navigation"; // Important: use next/navigation for App Router
+import UserAvatar from "@/lib/avatar";
+import { useLogin } from "@/lib/loginContext";
+import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 
 interface CourseData {
   id: number;
@@ -16,6 +20,7 @@ interface CourseData {
   // upvotedBy: string[];
   joinedCount: number;
   joinedUsers: string[];
+  joined: Boolean;
   avatar: string;
   difficulty: string;
   description: string;
@@ -39,9 +44,30 @@ export default function CourseCard({ details }: { details: CourseData }) {
     year: "numeric",
   });
 
+  const { user, login, logout } = useLogin(); // Access login and user from context
+  const [hideJoin, setHideJoin] = useState<any>(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const { push } = useRouter();
+
+  useEffect(() => {
+    if (Cookies.get("token")) {
+      const tokenFromCookies: any = Cookies.get("token");
+      const decoded: any = jwtDecode(tokenFromCookies);
+      console.log("decoded", decoded);
+      console.log("user", user, details?.userId);
+      if (decoded?.id == details?.userId) {
+        setHideJoin(true);
+      } else {
+        setHideJoin(false);
+      }
+
+      // setToken(tokenFromCookies);
+      // provideFeedback(tokenFromCookies);
+      // setAccountuser(profileData?.accountUserId);
+    }
+  }, [Cookies.get("token")]);
+
   return (
     <>
       <div className="bg-white border border-gray-200 mb-1 rounded-lg shadow-sm p-4 sm:p-6 transform transition-all duration-300 ease-in-out hover:scale-101 hover:shadow-md hover:bg-slate-50   hover:translate-y-[-1px] ">
@@ -70,7 +96,14 @@ export default function CourseCard({ details }: { details: CourseData }) {
           </div>
 
           <div className="flex items-start space-x-4 group">
-            <div
+            <UserAvatar
+              firstName={
+                details?.userDetails?.email?.split("@")[0] ??
+                details?.userDetails?.email
+              }
+              onClick={() => push(`profile/${details?.userDetails?.userName}`)}
+            />
+            {/* <div
               className="relative w-12 h-12 flex-shrink-0 rounded-full overflow-hidden cursor-pointer"
               onClick={() => push("/profile")}
             >
@@ -82,45 +115,52 @@ export default function CourseCard({ details }: { details: CourseData }) {
                 layout="fill"
                 objectFit="cover"
               />
-            </div>
+            </div> */}
 
             <div className="flex-1  relative">
               <h3
-                className="max-w-sm font-semibold text-lg sm:text-xl leading-tight mb-1 truncate hover:underline cursor-pointer"
+                className="max-w-sm  font-semibold text-lg sm:text-xl leading-tight mb-1 line-clamp-1 hover:underline cursor-pointer"
                 onClick={() => setIsDetailsOpen(true)}
               >
-                {details.title}
+                {details?.title}
               </h3>
 
               {/* Author and Level Below Title */}
               <div className="flex items-center gap-2  mt-1">
                 <span
                   className="text-gray-600 text-sm truncate inline-block cursor-pointer"
-                  onClick={() => push("/profile")}
+                  onClick={() =>
+                    push(`profile/${details?.userDetails?.userName}`)
+                  }
                 >
                   {/* {details?.userId?.userName ?? "userName"} */}
                   {details?.userDetails?.email?.split("@")[0] ??
-                    details?.userDetails?.email}{" "}
+                    details?.userDetails?.email}
                 </span>
                 <span
                   className="text-xs border border-gray-300 rounded px-2 py-0.5 whitespace-nowrap cursor-pointer"
-                  onClick={() => push("/profile")}
+                  onClick={() =>
+                    push(`profile/${details?.userDetails?.userName}`)
+                  }
                 >
                   {details?.userLevel}
                 </span>
               </div>
 
               {/* Sign Up Button */}
-              <button
-                className={`invisible md:visible absolute top-1/2 right-0 transform -translate-y-1/2 ${
-                  details?.joinerDetails?.isJoined
-                    ? "bg-green-500"
-                    : "bg-red-500"
-                }   text-white  rounded-xl py-2 px-5 font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-100 cursor-pointer`}
-                onClick={() => setIsDetailsOpen(true)}
-              >
-                {details?.joinerDetails?.isJoined ? "Joined" : "Join Practice"}
-              </button>
+
+              {!hideJoin && (
+                <button
+                  className={`absolute top-1/2 right-0 transform -translate-y-1/2 ${
+                    details?.joined
+                      ? "bg-green-500 invisible md:visible opacity-100"
+                      : "bg-red-500 invisible md:invisible md:opacity-0 md:group-hover:visible md:group-hover:opacity-100"
+                  } text-white rounded-xl py-2 px-5 font-bold transition-opacity duration-100 cursor-pointer`}
+                  onClick={() => setIsDetailsOpen(true)}
+                >
+                  {details?.joined ? "Joined" : "Join Practice"}
+                </button>
+              )}
             </div>
           </div>
 
@@ -151,6 +191,7 @@ export default function CourseCard({ details }: { details: CourseData }) {
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
         details={details}
+        hideJoin={hideJoin}
       />
     </>
   );

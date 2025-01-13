@@ -2,6 +2,11 @@ import { getUserFromToken } from "@/lib/utils";
 import { NextRequest, NextResponse } from "next/server";
 import { connect } from "@/dbConfig/dbConfig";
 import JoinPostsModel from "@/models/joinSchema";
+import UserModel from "@/models/userSchema";
+import JoinModel from "@/models/joinSchema";
+import PostFormModel from "@/models/formSchema";
+import { object } from "zod";
+import { Types } from "mongoose";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,15 +15,18 @@ export async function POST(req: NextRequest) {
 
     // Get the token from cookies
     const token = req.cookies.get("token");
+
+    // console.log("tokentoken", token);
     if (!token) {
       return NextResponse.json(
-        { error: "Authorization token is missing" },
+        { error: "Authorization token is missing", status: 401 },
         { status: 401 }
       );
     }
 
     const tokenValue = token.value;
-    console.log("Token Value:", tokenValue);
+
+    // console.log("tokenValuetokenValue", tokenValue);
 
     // Decode the token to get user details
     const decoded = await getUserFromToken(tokenValue);
@@ -26,56 +34,55 @@ export async function POST(req: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { error: "Invalid or expired token" },
+        { message: "Invalid or expired token" },
         { status: 401 }
       );
     }
-    console.log("Authenticated User ID:", userId);
 
     // Parse the request body
     const { postId } = await req.json();
     if (!postId) {
       return NextResponse.json(
-        { error: "postId  is required" },
+        { message: "postId is required" },
         { status: 400 }
       );
     }
 
-    // Check if the user has already joined this card
-    const existingEntry = await JoinPostsModel.findOne({ userId, postId });
+    const postDetails = await PostFormModel.findById({
+      _id: new Types.ObjectId(postId),
+    });
 
-    console.log("existingEntry", existingEntry);
+    // console.log("postDetails", postDetails);
 
-    if (existingEntry) {
-      // Toggle the isJoined status
-      existingEntry.isJoined = !existingEntry.isJoined;
-      await existingEntry.save();
+    // console.log("postId", postId);
+
+    if (postDetails?.userId == userId) {
+      return NextResponse.json(
+        { message: "self join not possible" },
+        { status: 400 }
+      );
+    }
+
+    const user = await JoinModel.findOne({ userId });
+
+    if (user && user.joinedPosts.includes(postId)) {
+      // Unjoin the post
+      await JoinModel.updateOne({ userId }, { $pull: { joinedPosts: postId } });
 
       return NextResponse.json(
-        {
-          message: `Successfully ${
-            existingEntry.isJoined ? "joined" : "left"
-          } the card`,
-          isJoined: existingEntry.isJoined,
-        },
+        { message: "Successfully left the session", status: 200 },
         { status: 200 }
       );
     } else {
-      // Create a new entry with isJoined: true
-      const newEntry = new JoinPostsModel({
-        userId,
-        postId,
-        isJoined: true,
-      });
-      await newEntry.save();
-
-      console.log("newEntry", newEntry);
+      // Join the post
+      await JoinModel.updateOne(
+        { userId },
+        { $addToSet: { joinedPosts: postId } },
+        { upsert: true } // Create a new document if it doesn't exist
+      );
 
       return NextResponse.json(
-        {
-          message: "Successfully joined the card",
-          isJoined: true,
-        },
+        { message: "Successfully joined the session", status: 200 },
         { status: 200 }
       );
     }

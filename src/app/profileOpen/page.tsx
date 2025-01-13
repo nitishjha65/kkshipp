@@ -1,13 +1,20 @@
-"use client";
-import React from "react";
-import { useState } from "react";
-import Details from "@/components/profile/postdetails";
-import { notFound } from "next/navigation";
+// "use client";
+// import React from "react";
+// import { useState } from "react";
+// import Details from "@/components/profile/postdetails";
+// import { notFound } from "next/navigation";
 
-export default function CoursePage() {
-  return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <Details />
-    </div>
-  );
-}
+// export default function CoursePage() {
+//   return (
+//     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+//       <Details />
+//     </div>
+//   );
+// }
+import React from "react";
+
+const page = () => {
+  return <div>page</div>;
+};
+
+export default page;

@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import SyllabusItemModal from "./feedback";
+import SyllabusItemModalByStudent from "./feedbackBystudent";
+import { ArrowLeft } from "lucide-react";
+import axios from "axios";
+import Cookies from "js-cookie";
 
 interface Student {
   id: number;
@@ -37,7 +41,12 @@ interface Course {
   syllabus: SyllabusItem[];
 }
 
-export default function PostForm() {
+export default function PostDetails({
+  details,
+  setOpenDetails,
+  canFeedback,
+  canFeedbackJoiner,
+}: any) {
   const [isClient, setIsClient] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SyllabusItem | null>(null);
   const [course, setCourse] = useState<Course>({
@@ -199,24 +208,71 @@ export default function PostForm() {
     setSelectedItem(null);
   };
 
-  const handleFeedbackSubmit = (
-    studentId: number,
-    rating: number,
-    feedback: string
-  ) => {
-    console.log(
-      `Feedback submitted for student ${studentId}: Rating - ${rating}, Feedback - ${feedback}`
-    );
-    // Here you would typically update the state or send the data to a server
+  console.log("selectedItem", selectedItem);
+
+  const handleFeedbackSubmit = async (feedbackList: any[]) => {
+    console.log("final ");
+    console.log("feedbackList", feedbackList);
+    // feedbackList?.forEach(({ studentId, rating, feedback }) => {
+    //   console.log(
+    //     `Submitting feedbackk for student ${studentId}: rating ${rating}, feedback: ${feedback}`
+    //   );
+    // });
+
+    // You can also make a single API call with the entire feedbackList if preferred
+    // apiCall(feedbackList);
+    console.log("okkkkkkkkkkkkkkkkkkkkkkk");
+    try {
+      const token = Cookies.get("token");
+
+      console.log("tokentoken", token);
+
+      if (token) {
+        // setIsLoading(true);
+        let response;
+
+        // if (canFeedback) {
+        response = await axios.post(
+          `/api/profile/feedback/post?id=${details?._id}&canFeedbackJoiner=${canFeedbackJoiner}`,
+          { feedbackList },
+          { withCredentials: true }
+        );
+        // }
+
+        if (response?.data?.status == 200) {
+          console.log("Posted Successfuly", response?.data);
+          const success = response?.data?.message;
+        } else {
+          const err = response?.data?.error;
+          // setResponseMessage(err ?? "Unable to Login");
+        }
+      } else {
+        //open login
+      }
+    } catch (error) {
+      console.error("Error in onSubmit:", error);
+    } finally {
+      // setIsLoading(false);
+    }
+
+    handleCloseModal();
   };
 
+  console.log("details", details);
+
   if (!isClient) {
+    console.log("!clinr");
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-3xl font-bold">{course.title}</CardTitle>
-            <Button>Join</Button>
+            <Button
+              className="bg-green-500 text-center hover:bg-green-600"
+              onClick={() => setOpenDetails(false)}
+            >
+              <ArrowLeft className="w-8 h-8 text-black-500" /> Back
+            </Button>{" "}
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4 mb-6">
@@ -239,12 +295,20 @@ export default function PostForm() {
     );
   }
 
+  console.log("canFeedback", canFeedback);
+  console.log("canFeedbackJiner", canFeedbackJoiner);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-3xl font-bold">{course.title}</CardTitle>
-          <Button>Join</Button>
+          <CardTitle className="text-3xl font-bold">{details?.title}</CardTitle>
+          <Button
+            className="bg-green-500 text-center hover:bg-green-600"
+            onClick={() => setOpenDetails(false)}
+          >
+            <ArrowLeft className="w-8 h-8 text-black-500" /> Back
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4 mb-6">
@@ -263,19 +327,19 @@ export default function PostForm() {
           </div>
 
           <div className="space-y-4 mb-6">
-            <p>{course.description}</p>
-            <div className="flex flex-wrap gap-4">
+            <p>{details?.description}</p>
+            <div className="flex flex-   gap-4">
               <div className="flex items-center gap-2 text-gray-600">
                 <Calendar className="w-5 h-5" />
-                <span>Start: {formatDate(course.startDate)}</span>
+                <span>Start: {formatDate(details?.startDate)}</span>
               </div>
               <div className="flex items-center gap-2 text-gray-600">
                 <Calendar className="w-5 h-5" />
-                <span>End: {formatDate(course.endDate)}</span>
+                <span>End: {formatDate(details?.endDate)}</span>
               </div>
               <div className="flex items-center gap-2 text-gray-600">
                 <Clock className="w-5 h-5" />
-                <span>Duration: {course.duration}</span>
+                <span>Duration: {details?.duration}</span>
               </div>
             </div>
           </div>
@@ -283,19 +347,26 @@ export default function PostForm() {
           <div>
             <h3 className="text-2xl font-semibold mb-4">Syllabus</h3>
             <div className="space-y-4">
-              {course.syllabus.map((item) => (
+              {details?.syllabus.map((item: any) => (
                 <div
-                  key={item.id}
+                  key={item?._id}
                   className="flex items-center justify-between p-4 group bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => handleSyllabusItemClick(item)}
+                  onClick={() => {
+                    //open diff modal on auther and joiner
+                    if (canFeedback) handleSyllabusItemClick(item);
+                    if (canFeedbackJoiner) handleSyllabusItemClick(item);
+                  }}
                 >
                   <div>
-                    <h4 className="font-medium text-gray-900">{item.topic}</h4>
-                    <p className="text-gray-500">{formatDate(item.date)}</p>
+                    <h4 className="font-medium text-gray-900">{item?.topic}</h4>
+                    <p className="text-gray-500">{formatDate(item?.date)}</p>
                   </div>
-                  <button className=" bg-teal-500  text-white  rounded-xl py-2 px-5 font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-100 cursor-pointer">
-                    feedback
-                  </button>
+
+                  {canFeedback || canFeedbackJoiner ? (
+                    <button className=" bg-teal-500  text-white  rounded-xl py-2 px-5 font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-100 cursor-pointer">
+                      feedback
+                    </button>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -303,9 +374,19 @@ export default function PostForm() {
         </CardContent>
       </Card>
 
-      {selectedItem && (
+      {selectedItem && canFeedback && (
         <SyllabusItemModal
           item={selectedItem}
+          details={details}
+          onClose={handleCloseModal}
+          onFeedbackSubmit={handleFeedbackSubmit}
+        />
+      )}
+
+      {selectedItem && canFeedbackJoiner && (
+        <SyllabusItemModalByStudent
+          item={selectedItem}
+          details={details}
           onClose={handleCloseModal}
           onFeedbackSubmit={handleFeedbackSubmit}
         />

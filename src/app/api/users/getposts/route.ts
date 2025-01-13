@@ -4,90 +4,104 @@ import { connect } from "@/dbConfig/dbConfig";
 import jwt from "jsonwebtoken";
 import PostFormModel from "@/models/formSchema";
 import { Mongoose, Types } from "mongoose";
-
-await connect();
+import JoinModel from "@/models/joinSchema";
+import { DevBundlerService } from "next/dist/server/lib/dev-bundler-service";
+import { queryObjects } from "v8";
 
 export async function GET(req: NextRequest) {
   try {
-    // const token = req.cookies.get("token");
-    // console.log("token", token);
-    // if (!token) {
-    //   return NextResponse.json(
-    //     { error: "Authorization token is missing" },
-    //     { status: 401 }
-    //   );
-    // }
-    // const tokenVal = token?.value;
+    await connect();
 
-    // console.log("tokenVal", tokenVal);
+    // Get user ID from the token if available
+    const token = req.cookies.get("token")?.value;
+    let userIdDecoded: string | null = null;
 
-    // const decoded = await getUserFromToken(tokenVal);
+    if (token) {
+      try {
+        const decoded = await getUserFromToken(token);
+        userIdDecoded = decoded?.id || null;
+      } catch (error) {
+        console.log("Invalid or expired token");
+        return NextResponse.json(
+          { error: "Invalid or expired token" },
+          { status: 401 }
+        );
+      }
+    }
 
-    // const user = decoded?.id;
+    const query = req?.nextUrl?.searchParams;
 
-    // if (!user) {
-    //   return NextResponse.json(
-    //     { error: "Invalid or expired token" },
-    //     { status: 401 }
-    //   );
-    // }
+    const page = query.get("page"); // Use .get() to access a specific query parameter
+    const limit = query.get("limit");
 
-    // console.log("Authenticated User:", user);
+    console.log("Query parameter 'page':", page, limit);
 
-    // const allPosts = await PostFormModel.find().sort({ createdAt: -1 });
+    const joinData = await JoinModel.findOne({ userId: userIdDecoded });
+    const joinedPostIds = joinData
+      ? joinData?.joinedPosts?.map((postId: any) => postId?.toString())
+      : [];
 
-    const allPosts = await PostFormModel.aggregate([
+    const today = new Date();
+    const year = today.getUTCFullYear();
+    const month = String(today.getUTCMonth() + 1).padStart(2, "0"); // Months are 0-based
+    const day = String(today.getUTCDate()).padStart(2, "0");
+    const todayFormatted = `${year}-${month}-${day}`;
+
+    const pipeline = [
+      {
+        $match: {
+          startDate: { $gte: todayFormatted }, // Filter documents with startDate >= '2025-01-11'
+        },
+      },
       {
         $lookup: {
-          from: "users", // The name of the 'users' collection in MongoDB
-          let: { userIdStr: "$userId" }, // Pass userId as a variable
+          from: "users", // Join with the users collection
+          let: { userIdStr: { $toString: "$userId" } },
           pipeline: [
             {
-              $addFields: {
-                _idAsString: { $toString: "$_id" }, // Convert ObjectId to string
+              $match: {
+                $expr: {
+                  $eq: ["$_id", { $toObjectId: "$$userIdStr" }],
+                },
               },
             },
             {
-              $match: {
-                $expr: { $eq: ["$_idAsString", "$$userIdStr"] }, // Compare converted _id with userId
-              },
+              $project: { email: 1, name: 1, userName: 1 },
             },
           ],
           as: "userDetails",
         },
       },
-
       {
-        // Second stage: Lookup to join 'joiners' collection
-        $lookup: {
-          from: "joiners", // The joiners collection
-          localField: "userId", // Match with userId field in PostForm
-          foreignField: "userId", // Match with userId field in Joiners
-          as: "joinerDetails", // Store the joined joiner data in 'joinerDetails'
+        $unwind: {
+          path: "$userDetails",
+          preserveNullAndEmptyArrays: true,
         },
       },
+      {
+        $skip: (Number(page) - 1) * Number(limit),
+      },
+      {
+        $limit: Number(limit),
+      },
+    ];
 
-      {
-        $unwind: "$userDetails", // Flatten the userDetails array
-      },
-      {
-        $unwind: "$joinerDetails", // Flatten the joinerDetails array
-      },
-      {
-        $sort: {
-          createdAt: -1, // Sort by createdAt in descending order
-        },
-      },
-    ]);
+    const postSessions = await PostFormModel.aggregate(pipeline);
+
+    const allPosts = postSessions?.map((post: any) => ({
+      ...post,
+      joined: joinedPostIds.includes(post?._id?.toString()),
+    }));
 
     return NextResponse.json({
-      message: "Post fetched successfully",
+      message: "Posts fetched successfully",
       allPosts,
       status: 200,
     });
   } catch (err: any) {
+    console.log(err, "Sdfcs");
     return NextResponse.json(
-      { error: "Something went wrong while fetching posts" },
+      { error: "Something went wrong while fetching posts", details: err },
       { status: 500 }
     );
   }

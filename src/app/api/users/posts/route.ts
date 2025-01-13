@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     console.log("token", token);
     if (!token) {
       return NextResponse.json(
-        { error: "Authorization token is missing" },
+        { error: "Authorization token is missing", status: 401 },
         { status: 401 }
       );
     }
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "Invalid or expired token" },
+        { error: "Invalid or expired token", status: 401 },
         { status: 401 }
       );
     }

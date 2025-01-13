@@ -57,3 +57,36 @@ export const formatDate = (input: string | Date): string => {
   // Format the date
   return `${month} ${day}, ${year}`;
 };
+
+export const getColorByLetter = (letter: string): any => {
+  const colors: any = {
+    A: "#FF5733", // Red
+    B: "#33FF57", // Green
+    C: "#3357FF", // Blue
+    D: "#F4D03F", // Yellow
+    E: "#9B59B6", // Purple
+    F: "#1ABC9C", // Teal
+    G: "#F39C12", // Orange
+    H: "#D35400", // Dark Orange
+    I: "#8E44AD", // Violet
+    J: "#2980B9", // Light Blue
+    K: "#16A085", // Sea Green
+    L: "#2C3E50", // Dark Blue
+    M: "#E67E22", // Pumpkin
+    N: "#1d4ed8", // Gray
+    O: "#2ECC71", // Emerald
+    P: "#E74C3C", // Red
+    Q: "#8E44AD", // Purple
+    R: "#34495E", // Dark Blue
+    S: "#16A085", // Sea Green
+    T: "#F39C12", // Orange
+    U: "#D35400", // Dark Orange
+    V: "#9B59B6", // Purple
+    W: "#F4D03F", // Yellow
+    X: "#FF5733", // Red
+    Y: "#33FF57", // Green
+    Z: "#2980B9", // Light Blue
+  };
+
+  return colors[letter?.toUpperCase()] || "#7F8C8D"; // Default color is gray
+};

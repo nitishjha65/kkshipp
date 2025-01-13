@@ -32,27 +32,42 @@ export default function Home() {
           className="opacity-50"
         /> */}
         <div
-          className="relative h-[450px] bg-hero-pattern bg-[51%_38%] bg-no-repeat bg-cover"
+          // className="relative h-[450px] bg-hero-pattern bg-[51%_38%] bg-no-repeat bg-cover"
+          className="relative h-[450px]"
           // style={{
           //   backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/assets/bgImageLoqQ.jpg')`,
           //   backgroundSize: "cover",
           //   backgroundPosition: "51% 38%",
           // }}
         >
+          <Image
+            src="/assets/bgImageLoqQ.jpg" // Path to your hero image
+            alt="Hero background"
+            layout="fill" // Covers the entire div
+            objectFit="cover" // Ensures the image covers the container
+            objectPosition="51% 38%" // Adjust the focal point of the image
+            priority // Ensures the image is loaded quickly
+            className="z-0"
+          />
+
           {/* <link rel="preload" href="/assets.bgImage.jpg" as="image" /> */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-50"></div>
+
           <Navbar />
 
-          <div className="absolute inset-0 flex flex-col justify-center items-center text-center text-5xl mt-5 user-select-none text-white">
+          <div className="absolute inset-0 flex flex-col justify-center items-center text-center text-2xl md:text-5xl mt-5 user-select-none text-white">
             <Link href="/" className="cursor-pointer hover:opacity-80">
               <div className="drop-shadow-2xl">
-                find a{" "}
+                {/* Where Practice Makes Perfect Partners */}
+                where{" "}
                 <span className="font-bold">
-                  <span className="hidden sm:contents">remote</span> job
+                  {/* <span className="hidden sm:contents">Practice</span> makes */}
+                  <span className="">Practice</span> makes
                 </span>
               </div>
-              <div className="hidden sm:contents drop-shadow-2xl">
-                work from <span className="font-bold">anywhere</span>
+              {/* <div className="hidden sm:contents drop-shadow-2xl"> */}
+              <div className=" drop-shadow-2xl">
+                <span className="font-bold">Perfect Partners</span>
               </div>
             </Link>
 

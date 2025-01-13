@@ -11,15 +11,22 @@ import { Label } from "@/components/ui/label";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react"; // Import Loader2 icon from lucide-react
+import SignUpModal from "./signUp";
+import React, { createContext, useContext } from "react";
+import { useLogin } from "@/lib/loginContext";
 
-export function SignInModal() {
+// interface SignInModalProps {
+//   isButton?: boolean; // Optional prop
+// }
+
+export function SignInModal({ open, setOpen }: any) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [open, setOpen] = useState(false);
+  // const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [responseMessage, setResponseMessage] = useState("");
-
-  const router = useRouter();
+  const [isSignup, setIsSignUp] = useState(false);
+  const { user, login, logout } = useLogin();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,12 +38,16 @@ export function SignInModal() {
       });
 
       if (response?.data?.status == 200) {
-        console.log("Login successsssss", response.data);
+        // console.log("Login successsssss", response.data);
         const success = response?.data?.message;
         setResponseMessage(success);
-        router.push("/profile");
+        setOpen(false);
+        login(response?.data);
+
+        // router.push("/profile");
       } else {
         const err = response?.data?.error;
+
         setResponseMessage(err ?? "Unable to Login");
       }
     } catch (error: any) {
@@ -50,13 +61,14 @@ export function SignInModal() {
 
   return (
     <>
-      <Button
-        onClick={() => setOpen(true)}
-        className=" p-2 z-[1001] font-extrabold text-black bg-white border-2 border-solid border-white hover:bg-transparent hover:text-white transition-all duration-300 ease-in-out"
-      >
-        Login
-      </Button>
-
+      {/*      
+        <Button
+          onClick={() => setOpen(true)}
+          className=" p-2 z-[1001] font-extrabold text-black bg-white border-2 border-solid border-white hover:bg-transparent hover:text-white transition-all duration-300 ease-in-out"
+        >
+          Login
+        </Button>
+   */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -104,12 +116,30 @@ export function SignInModal() {
             <span className="text-sm text-gray-500">
               Don't have an account?{" "}
             </span>
-            <Button variant="link" className="p-0">
+            <Button
+              variant="link"
+              className="p-0"
+              onClick={() => {
+                setIsSignUp(true);
+                setOpen(false);
+              }}
+            >
               Sign Up
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {isSignup && (
+        <SignUpModal
+          isOpen={isSignup}
+          onClose={() => setIsSignUp(false)}
+          onSwitch={() => {
+            setOpen(true);
+            setIsSignUp(false);
+          }}
+        />
+      )}
     </>
   );
 }
